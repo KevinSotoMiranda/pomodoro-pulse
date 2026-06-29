@@ -1,0 +1,7 @@
+/apps/firmware/.pio
+/apps/firmware/.vscode/.browse.c_cpp.db*
+/apps/firmware/.vscode/c_cpp_properties.json
+/apps/firmware/.vscode/launch.json
+/apps/firmware/.vscode/ipch
+
+
