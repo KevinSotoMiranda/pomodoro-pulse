@@ -303,27 +303,6 @@ Grafana for the heavy time-series charting.*
 
 ---
 
-## Resume Bullets (X-Y-Z Format)
-
-> Written in Google's X-Y-Z formula: *Accomplished [X] as measured by [Y], by doing [Z].*
-
-1. **Guaranteed 100% session data integrity during network outages** across 48 hours of
-   continuous stress testing, by implementing an offline-first ESP32 NVS Flash logging layer
-   and an idempotent MQTT replay routine that stitches back-dated sessions into InfluxDB
-   without corrupting productivity streaks.
-
-2. **Reduced time-series dashboard query latency by 60%** vs. a naïve per-request polling
-   baseline, by architecting an event-driven data pipeline (HiveMQ → FastAPI → InfluxDB)
-   with Pydantic v2 payload validation and pre-aggregated Flux materialized views serving
-   React dashboard endpoints.
-
-3. **Eliminated all focus session data loss under adverse real-world network conditions**
-   by engineering a three-task FreeRTOS architecture on the ESP32 — a high-priority timer
-   task, a high-priority state machine task, and a low-priority comms task decoupled
-   via queues — achieving zero missed Pomodoro cycles in 50+ simulated network-drop tests.
-
----
-
 ## Updated System Architecture Blueprint
 
 ```
