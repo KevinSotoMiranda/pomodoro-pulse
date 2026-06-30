@@ -13,8 +13,13 @@ struct LED {
   unsigned int fadeAmount;
 };
 
+struct BUZZER {
+  uint8_t pin;
+  unsigned long buzzerTime; 
+};
+
 LED leds[] = {
-  {26, 0, 5},
+  // {26, 0, 5}, COMMENTED OUT SINCE USING SAME PIN AS BUZZER
   {25, 0, 5},
   {23, 0, 5}
 };
@@ -28,6 +33,11 @@ Button buttons[] = {
   {21},
   {22}
 }; 
+
+BUZZER buzzer = {
+  26,
+  200
+};
 
 const int NUM_BUTTONS = sizeof(buttons) / sizeof(buttons[0]);
 const int NUM_LED = sizeof(leds) / sizeof(leds[0]);
@@ -50,6 +60,8 @@ void setup() {
   for(int i = 0; i < NUM_LED; i++) {
     pinMode(leds[i].pin, OUTPUT);
   }
+
+  pinMode(buzzer.pin, OUTPUT);
 }
 
 void updateLights() {
@@ -68,6 +80,12 @@ void updateLights() {
 
     delay(30); // Wait 30 ms
   }
+}
+
+void triggerBuzzer() {    
+    digitalWrite(buzzer.pin, HIGH);
+    delay(buzzer.buzzerTime); // Have buzzer play for 200 ms
+    digitalWrite(buzzer.pin, LOW);
 }
 
 // put your main code here, to run repeatedly:
@@ -96,6 +114,7 @@ void loop() {
         if(button.currentState == LOW) {
           // Button press is confirmed, take appropriate action
           Serial.printf("Button %d was pressed\n", i + 1);
+          triggerBuzzer();
         }
       }
     }

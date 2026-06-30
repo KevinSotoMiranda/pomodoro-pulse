@@ -167,7 +167,7 @@ application logic. Skipping this phase causes hours of debugging later.*
 - [x] Write a blocking GPIO read loop and confirm each pin registers a press via the serial monitor
 - [x] Implement a 10 ms software debounce filter; run 100 rapid flips per switch and verify zero ghost presses in the serial log
 - [x] Wire the RGB LED; drive each colour channel independently via PWM and confirm no dead channels
-- [ ] Wire the active buzzer; trigger a 200 ms tone on button press and confirm audible output
+- [x] Wire the active buzzer; trigger a 200 ms tone on button press and confirm audible output
 - [ ] Map each of the 6 switches to a named face state: `CODING`, `WRITING`, `BREAK`, `MEETING`, `DEEP_WORK`, `IDLE`
 - [ ] Place the physical block flat on each face and confirm only one GPIO reads HIGH at a time (geometric/physical validation)
 
