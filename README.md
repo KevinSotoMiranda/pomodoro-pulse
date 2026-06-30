@@ -165,7 +165,7 @@ application logic. Skipping this phase causes hours of debugging later.*
 - [x] Install ESP-IDF **or** Arduino IDE with the ESP32 board support package
 - [x] Wire all 6 button switches to separate GPIO pins; verify continuity at each pin with a multimeter before powering on
 - [x] Write a blocking GPIO read loop and confirm each pin registers a press via the serial monitor
-- [ ] Implement a 10 ms software debounce filter; run 100 rapid flips per switch and verify zero ghost presses in the serial log
+- [x] Implement a 10 ms software debounce filter; run 100 rapid flips per switch and verify zero ghost presses in the serial log
 - [ ] Wire the RGB LED; drive each colour channel independently via PWM and confirm no dead channels
 - [ ] Wire the active buzzer; trigger a 200 ms tone on button press and confirm audible output
 - [ ] Map each of the 6 switches to a named face state: `CODING`, `WRITING`, `BREAK`, `MEETING`, `DEEP_WORK`, `IDLE`
