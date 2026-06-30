@@ -1,7 +1,18 @@
 #include <Arduino.h>
 
+enum State {
+  CODING,
+  WRITING,
+  BREAK,
+  MEETING,
+  DEEP_WORK,
+  IDLE
+};
+
 struct Button {
   uint8_t pin;
+  State buttonState;
+
   bool lastState;
   bool currentState;
   unsigned long lastDebounceTime;
@@ -26,12 +37,12 @@ LED leds[] = {
 
 // GPIO pins connected to button
 Button buttons[] = {
-  {18},
-  {19},
-  {17},
-  {16},
-  {21},
-  {22}
+  {18, CODING},
+  {19, WRITING},
+  {17, BREAK},
+  {16, MEETING},
+  {21, DEEP_WORK},
+  {22, IDLE}
 }; 
 
 BUZZER buzzer = {
@@ -43,6 +54,8 @@ const int NUM_BUTTONS = sizeof(buttons) / sizeof(buttons[0]);
 const int NUM_LED = sizeof(leds) / sizeof(leds[0]);
 
 const unsigned long DEBOUNCE_TIME = 10; // debounce time in ms
+
+enum State currentState = IDLE;
 
 // put your setup code here, to run once:
 void setup() {
@@ -62,6 +75,32 @@ void setup() {
   }
 
   pinMode(buzzer.pin, OUTPUT);
+}
+
+void updateState(State buttonState) {
+  currentState = buttonState;
+
+  Serial.print("State is now ");
+  switch(currentState) {
+    case CODING:
+      Serial.print("CODING\n");
+      break;
+    case WRITING:
+      Serial.print("WRITING\n");
+      break;
+    case BREAK:
+      Serial.print("BREAK\n");
+      break;
+    case MEETING:
+      Serial.print("MEETING\n");
+      break;
+    case DEEP_WORK:
+      Serial.print("DEEP_WORK\n");
+      break;
+    case IDLE:
+      Serial.print("IDLE\n");
+      break;
+  }
 }
 
 void updateLights() {
@@ -115,6 +154,7 @@ void loop() {
           // Button press is confirmed, take appropriate action
           Serial.printf("Button %d was pressed\n", i + 1);
           triggerBuzzer();
+          updateState(button.buttonState);
         }
       }
     }
