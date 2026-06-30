@@ -18,9 +18,6 @@ Button buttons[] = {
 
 const int NUM_BUTTONS = sizeof(buttons) / sizeof(buttons[0]);
 
-// int lastState[num_buttons]; // the previous i state from the input pin
-// int currentState[num_buttons]; // the current i reading from the input pin
-
 // put your setup code here, to run once:
 void setup() {
   Serial.begin(115200);
