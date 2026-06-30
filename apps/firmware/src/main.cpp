@@ -7,6 +7,18 @@ struct Button {
   unsigned long lastDebounceTime;
 };
 
+struct LED {
+  uint8_t pin;
+  unsigned int brightness;
+  unsigned int fadeAmount;
+};
+
+LED leds[] = {
+  {26, 0, 5},
+  {25, 0, 5},
+  {23, 0, 5}
+};
+
 // GPIO pins connected to button
 Button buttons[] = {
   {18},
@@ -18,6 +30,8 @@ Button buttons[] = {
 }; 
 
 const int NUM_BUTTONS = sizeof(buttons) / sizeof(buttons[0]);
+const int NUM_LED = sizeof(leds) / sizeof(leds[0]);
+
 const unsigned long DEBOUNCE_TIME = 10; // debounce time in ms
 
 // put your setup code here, to run once:
@@ -32,10 +46,34 @@ void setup() {
     buttons[i].lastState = buttons[i].currentState;
     buttons[i].lastDebounceTime = 0;
   }
+
+  for(int i = 0; i < NUM_LED; i++) {
+    pinMode(leds[i].pin, OUTPUT);
+  }
+}
+
+void updateLights() {
+
+  for(int i = 0; i < NUM_LED; i++) {
+    LED &led = leds[i];
+
+    // Set brightness
+    analogWrite(led.pin, led.brightness);
+    led.brightness+= led.fadeAmount; // Increase the brightness
+    
+    // When it has reached the maximum brightness (255) start decrementing it, or vice versa
+    if(led.brightness >= 255 || led.brightness <= 0) {
+      led.fadeAmount = -led.fadeAmount; // Invert the amount
+    }
+
+    delay(30); // Wait 30 ms
+  }
 }
 
 // put your main code here, to run repeatedly:
 void loop() {
+  updateLights();
+
   for(int i = 0; i < NUM_BUTTONS; i++) {
     Button &button = buttons[i];
 
