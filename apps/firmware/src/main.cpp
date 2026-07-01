@@ -57,6 +57,34 @@ const unsigned long DEBOUNCE_TIME = 10; // debounce time in ms
 
 enum State currentState = IDLE;
 
+int count = 0;
+int count_2 = 0;
+int count_3 = 0;
+
+void stateMachineTask(void * parameters) {
+  for(;;) {
+    Serial.print("STATE_MACHINE_TASK: ");
+    Serial.println(count++);
+    vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait 1 second, allow other tasks to run
+  }
+}
+
+void timerTask(void * parameters) {
+  for(;;) {
+    Serial.print("TIMER_TASK: ");
+    Serial.println(count_2++);
+    vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait 1 second, allow other tasks to run
+  }
+}
+
+void commsSyncTask(void * parameters) {
+  for(;;) {
+    Serial.print("COMMS_SYNC_TASK: ");
+    Serial.println(count_3++);
+    vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait 1 second, allow other tasks to run
+  }
+}
+
 // put your setup code here, to run once:
 void setup() {
   Serial.begin(115200);
@@ -75,6 +103,33 @@ void setup() {
   }
 
   pinMode(buzzer.pin, OUTPUT);
+
+  xTaskCreate(
+    stateMachineTask,
+    "STATE_MACHINE_TASK",
+    2048,
+    NULL,
+    2,
+    NULL
+  );
+
+  xTaskCreate(
+    timerTask,
+    "TIMER_TASK",
+    2048,
+    NULL,
+    2,
+    NULL
+  );
+
+  xTaskCreate(
+    commsSyncTask,
+    "COMMS_SYNC_TASK",
+    2048,
+    NULL,
+    1,
+    NULL
+  );
 }
 
 void updateState(State buttonState) {

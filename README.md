@@ -177,8 +177,8 @@ application logic. Skipping this phase causes hours of debugging later.*
 *Build the FreeRTOS task architecture, the software state machine, and the offline-first
 NVS Flash persistence layer. This is the hardest phase — do not rush it.*
 
-- [ ] **Design on paper first:** draw all 6 states, every valid transition, and every guard condition before writing any C++ code
-- [ ] Scaffold three FreeRTOS tasks: `StateMachineTask` (high priority), `TimerTask` (high priority), `CommsSyncTask` (low priority)
+- [x] **Design on paper first:** draw all 6 states, every valid transition, and every guard condition before writing any C++ code
+- [x] Scaffold three FreeRTOS tasks: `StateMachineTask` (high priority), `TimerTask` (high priority), `CommsSyncTask` (low priority)
 - [ ] Implement GPIO input via interrupts: the ISR posts an event to a `xQueueSendFromISR` queue; `StateMachineTask` pops from it — zero polling loops anywhere
 - [ ] Implement the Pomodoro countdown timer inside `TimerTask` using `xTaskGetTickCount()` for drift-free, high-resolution timing
 - [ ] Wire state transitions to RGB LED colour changes and distinct buzzer tone patterns per state
