@@ -57,37 +57,75 @@ const unsigned long DEBOUNCE_TIME = 10; // debounce time in ms
 
 enum State currentState = IDLE;
 
-int count = 0;
-int count_2 = 0;
-int count_3 = 0;
+// Create the size of the buffer
+QueueHandle_t xQueue;
+
+void updateState(State buttonState);
+void triggerBuzzer();
+void updateLights();
 
 void stateMachineTask(void * parameters) {
+  State receivedState;
+  const TickType_t xTicksToWait = pdMS_TO_TICKS( 100 );
+
+  TickType_t lastTimePressed = 0;
+
   for(;;) {
-    Serial.print("STATE_MACHINE_TASK: ");
-    Serial.println(count++);
-    vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait 1 second, allow other tasks to run
+    if(xQueueReceive(xQueue, &receivedState, xTicksToWait) == pdPASS) {
+      TickType_t currentTime = xTaskGetTickCount();
+      TickType_t elapsedDebounceTime = currentTime - lastTimePressed;
+
+      if(elapsedDebounceTime > pdMS_TO_TICKS( DEBOUNCE_TIME )) {
+        updateState(receivedState);
+        triggerBuzzer();
+
+        lastTimePressed = currentTime;
+
+        xQueueReset(xQueue);
+      }
+    }
   }
 }
 
 void timerTask(void * parameters) {
   for(;;) {
-    Serial.print("TIMER_TASK: ");
-    Serial.println(count_2++);
-    vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait 1 second, allow other tasks to run
+    updateLights();
   }
 }
 
 void commsSyncTask(void * parameters) {
   for(;;) {
-    Serial.print("COMMS_SYNC_TASK: ");
-    Serial.println(count_3++);
-    vTaskDelay(1000 / portTICK_PERIOD_MS); // Wait 1 second, allow other tasks to run
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
+}
+
+void IRAM_ATTR buttonPressISR( void ) {
+  // Create the size of items that will be in the buffer
+  State buttonState;
+
+  // A flag for the buffer to know if task has been finished or not
+  BaseType_t xHigherPriorityTaskWoken;
+  xHigherPriorityTaskWoken = pdFALSE;
+
+  for(int i = 0; i < NUM_BUTTONS; i++) {
+    int read = digitalRead(buttons[i].pin);
+
+    if(read == LOW) {
+      buttonState = buttons[i].buttonState;
+
+      // Do actual work
+      xQueueSendFromISR(xQueue, &buttonState, &xHigherPriorityTaskWoken);
+    }
+  }
+
+  // If a higher priority task was woken, yield to it immediately
+  portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 }
 
 // put your setup code here, to run once:
 void setup() {
   Serial.begin(115200);
+  xQueue = xQueueCreate( 10, sizeof( State ) );
 
   // initialize the pushbuttons pin as an pull-up input
   for(int i = 0; i < NUM_BUTTONS; i++) {
@@ -96,6 +134,8 @@ void setup() {
     buttons[i].currentState = digitalRead(buttons[i].pin);
     buttons[i].lastState = buttons[i].currentState;
     buttons[i].lastDebounceTime = 0;
+
+    attachInterrupt(digitalPinToInterrupt(buttons[i].pin), buttonPressISR, FALLING);
   }
 
   for(int i = 0; i < NUM_LED; i++) {
@@ -103,6 +143,7 @@ void setup() {
   }
 
   pinMode(buzzer.pin, OUTPUT);
+  
 
   xTaskCreate(
     stateMachineTask,
@@ -172,49 +213,16 @@ void updateLights() {
       led.fadeAmount = -led.fadeAmount; // Invert the amount
     }
 
-    delay(30); // Wait 30 ms
+    vTaskDelay(pdMS_TO_TICKS(30)); // Wait 30 ms
   }
 }
 
 void triggerBuzzer() {    
     digitalWrite(buzzer.pin, HIGH);
-    delay(buzzer.buzzerTime); // Have buzzer play for 200 ms
+    vTaskDelay(pdMS_TO_TICKS(buzzer.buzzerTime)); // Have buzzer play for 200 ms
     digitalWrite(buzzer.pin, LOW);
 }
 
 // put your main code here, to run repeatedly:
 void loop() {
-  updateLights();
-
-  for(int i = 0; i < NUM_BUTTONS; i++) {
-    Button &button = buttons[i];
-
-    // read the state of the switch/button:
-    int reading = digitalRead(button.pin);
-
-    unsigned long currentTime = millis();
-
-    // check difference (i.e., the button might have been pressed or released)
-    if(reading != button.lastState) {
-      button.lastDebounceTime = currentTime;
-    }
-
-    unsigned long elapsedDebounceTime = currentTime - button.lastDebounceTime;
-
-    if(elapsedDebounceTime > DEBOUNCE_TIME) {
-      // button has been stable long enough
-      if(reading != button.currentState) {
-        button.currentState = reading; // Update the stable state
-        if(button.currentState == LOW) {
-          // Button press is confirmed, take appropriate action
-          Serial.printf("Button %d was pressed\n", i + 1);
-          triggerBuzzer();
-          updateState(button.buttonState);
-        }
-      }
-    }
-
-    // save the last state
-    button.lastState = reading;
-  }
 }
