@@ -12,10 +12,6 @@ enum State {
 struct Button {
   uint8_t pin;
   State buttonState;
-
-  bool lastState;
-  bool currentState;
-  unsigned long lastDebounceTime;
 };
 
 struct LED {
@@ -130,10 +126,6 @@ void setup() {
   // initialize the pushbuttons pin as an pull-up input
   for(int i = 0; i < NUM_BUTTONS; i++) {
     pinMode(buttons[i].pin, INPUT_PULLUP);
-
-    buttons[i].currentState = digitalRead(buttons[i].pin);
-    buttons[i].lastState = buttons[i].currentState;
-    buttons[i].lastDebounceTime = 0;
 
     attachInterrupt(digitalPinToInterrupt(buttons[i].pin), buttonPressISR, FALLING);
   }
