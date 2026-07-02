@@ -180,7 +180,7 @@ NVS Flash persistence layer. This is the hardest phase — do not rush it.*
 - [x] **Design on paper first:** draw all 6 states, every valid transition, and every guard condition before writing any C++ code
 - [x] Scaffold three FreeRTOS tasks: `StateMachineTask` (high priority), `TimerTask` (high priority), `CommsSyncTask` (low priority)
 - [x] Implement GPIO input via interrupts: the ISR posts an event to a `xQueueSendFromISR` queue; `StateMachineTask` pops from it — zero polling loops anywhere
-- [ ] Implement the Pomodoro countdown timer inside `TimerTask` using `xTaskGetTickCount()` for drift-free, high-resolution timing
+- [x] Implement the Pomodoro countdown timer inside `TimerTask` using `xTaskGetTickCount()` for drift-free, high-resolution timing
 - [ ] Wire state transitions to RGB LED colour changes and distinct buzzer tone patterns per state
 - [ ] Initialize NVS: call `nvs_flash_init()` on boot and open a `ppp_sessions` namespace for session records
 - [ ] Write a `log_session()` function: on every state transition, persist `{ timestamp_ms, state_id, duration_ms }` to NVS Flash

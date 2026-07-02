@@ -84,8 +84,25 @@ void stateMachineTask(void * parameters) {
 }
 
 void timerTask(void * parameters) {
+  TickType_t timer = pdMS_TO_TICKS(10000); // 10 seconds
+  TickType_t startTime = xTaskGetTickCount(); // snapshot when countdown begins
+
   for(;;) {
-    updateLights();
+    TickType_t elapsedTime = xTaskGetTickCount() - startTime;
+
+    if(elapsedTime < timer) {
+      TickType_t remainingTime = timer - elapsedTime;
+      Serial.print("TIME REMAINING: ");
+      Serial.println(pdTICKS_TO_MS(remainingTime));
+      vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+    else {
+      // Timer expired
+      Serial.println("TIMER DONE");
+
+      // Reset start to rearm for the next countdown
+      startTime = xTaskGetTickCount();
+    }
   }
 }
 
