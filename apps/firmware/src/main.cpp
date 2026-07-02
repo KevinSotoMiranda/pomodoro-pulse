@@ -51,14 +51,14 @@ const int NUM_LED = sizeof(leds) / sizeof(leds[0]);
 
 const unsigned long DEBOUNCE_TIME = 10; // debounce time in ms
 
-enum State currentState = IDLE;
+TaskHandle_t timerTaskHandle = NULL;
 
 // Create the size of the buffer
 QueueHandle_t xQueue;
 
 void updateState(State buttonState);
 void triggerBuzzer();
-void updateLights();
+void updateLights(State newState);
 
 void stateMachineTask(void * parameters) {
   State receivedState;
@@ -75,6 +75,8 @@ void stateMachineTask(void * parameters) {
         updateState(receivedState);
         triggerBuzzer();
 
+        xTaskNotify(timerTaskHandle,(uint32_t) receivedState, eSetValueWithOverwrite);
+
         lastTimePressed = currentTime;
 
         xQueueReset(xQueue);
@@ -87,21 +89,33 @@ void timerTask(void * parameters) {
   TickType_t timer = pdMS_TO_TICKS(10000); // 10 seconds
   TickType_t startTime = xTaskGetTickCount(); // snapshot when countdown begins
 
+  uint32_t pulNotificationValue;
+  const TickType_t xTicksToWait = pdMS_TO_TICKS( 100 );
+  
+  State localState;
+
   for(;;) {
-    TickType_t elapsedTime = xTaskGetTickCount() - startTime;
-
-    if(elapsedTime < timer) {
-      TickType_t remainingTime = timer - elapsedTime;
-      Serial.print("TIME REMAINING: ");
-      Serial.println(pdTICKS_TO_MS(remainingTime));
-      vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-    else {
-      // Timer expired
-      Serial.println("TIMER DONE");
-
+    if(xTaskNotifyWait(0, 0, &pulNotificationValue, xTicksToWait) == pdPASS) {
       // Reset start to rearm for the next countdown
       startTime = xTaskGetTickCount();
+      localState = (State) pulNotificationValue;
+    }
+    else {
+      TickType_t elapsedTime = xTaskGetTickCount() - startTime;
+      
+      if(elapsedTime < timer) {
+        TickType_t remainingTime = timer - elapsedTime;
+        Serial.print("TIME REMAINING: ");
+        Serial.println(pdTICKS_TO_MS(remainingTime));
+        vTaskDelay(pdMS_TO_TICKS(1000));
+      }
+      else {
+        // Timer expired
+        Serial.println("TIMER DONE");
+
+        // Reset start to rearm for the next countdown
+        startTime = xTaskGetTickCount();
+      }
     }
   }
 }
@@ -169,7 +183,7 @@ void setup() {
     2048,
     NULL,
     2,
-    NULL
+    &timerTaskHandle
   );
 
   xTaskCreate(
@@ -183,11 +197,10 @@ void setup() {
 }
 
 void updateState(State buttonState) {
-  currentState = buttonState;
-  updateLights();
+  updateLights(buttonState);
 
   Serial.print("State is now ");
-  switch(currentState) {
+  switch(buttonState) {
     case CODING:
       Serial.print("CODING\n");
       break;
@@ -207,14 +220,13 @@ void updateState(State buttonState) {
       Serial.print("IDLE\n");
       break;
   }
-
 }
 
-void updateLights() {
+void updateLights(State newState) {
   for(int i = 0; i < NUM_LED; i++) {
     LED &led = leds[i];
 
-    if(currentState == led.state || currentState == led.state2) {
+    if(newState == led.state || newState == led.state2) {
       digitalWrite(led.pin, HIGH);
     }
     else {
