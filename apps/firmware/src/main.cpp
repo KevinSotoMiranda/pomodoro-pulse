@@ -16,8 +16,8 @@ struct Button {
 
 struct LED {
   uint8_t pin;
-  unsigned int brightness;
-  unsigned int fadeAmount;
+  State state;
+  State state2;
 };
 
 struct BUZZER {
@@ -26,9 +26,9 @@ struct BUZZER {
 };
 
 LED leds[] = {
-  // {26, 0, 5}, COMMENTED OUT SINCE USING SAME PIN AS BUZZER
-  {25, 0, 5},
-  {23, 0, 5}
+  // {26, BREAK, IDLE}, COMMENTED OUT SINCE USING SAME PIN AS BUZZER // Green LED
+  {25, CODING, DEEP_WORK}, // Red LED
+  {23, WRITING, MEETING} // Yellow LED
 };
 
 // GPIO pins connected to button
@@ -184,6 +184,7 @@ void setup() {
 
 void updateState(State buttonState) {
   currentState = buttonState;
+  updateLights();
 
   Serial.print("State is now ");
   switch(currentState) {
@@ -206,23 +207,19 @@ void updateState(State buttonState) {
       Serial.print("IDLE\n");
       break;
   }
+
 }
 
 void updateLights() {
-
   for(int i = 0; i < NUM_LED; i++) {
     LED &led = leds[i];
 
-    // Set brightness
-    analogWrite(led.pin, led.brightness);
-    led.brightness+= led.fadeAmount; // Increase the brightness
-    
-    // When it has reached the maximum brightness (255) start decrementing it, or vice versa
-    if(led.brightness >= 255 || led.brightness <= 0) {
-      led.fadeAmount = -led.fadeAmount; // Invert the amount
+    if(currentState == led.state || currentState == led.state2) {
+      digitalWrite(led.pin, HIGH);
     }
-
-    vTaskDelay(pdMS_TO_TICKS(30)); // Wait 30 ms
+    else {
+      digitalWrite(led.pin, LOW);
+    }
   }
 }
 
