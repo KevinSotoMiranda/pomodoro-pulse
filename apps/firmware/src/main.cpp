@@ -20,12 +20,17 @@ struct LED {
   State state2;
 };
 
-struct BUZZER {
+struct Buzzer {
   uint8_t pin;
-  unsigned long buzzerTime; 
 };
 
-LED leds[] = {
+struct BuzzerPattern {
+  int pattern[5];
+  int patternLength;
+  State state;
+};
+
+struct LED leds[] = {
   // {26, BREAK, IDLE}, COMMENTED OUT SINCE USING SAME PIN AS BUZZER // Green LED
   {25, CODING, DEEP_WORK}, // Red LED
   {23, WRITING, MEETING} // Yellow LED
@@ -41,13 +46,22 @@ Button buttons[] = {
   {22, IDLE}
 }; 
 
-BUZZER buzzer = {
+Buzzer buzzer = {
   26,
-  200
+};
+
+BuzzerPattern buzzerPatterns[] = {
+  {{100, 0, 0, 0, 0}, 1, CODING},
+  {{500, 0, 0, 0, 0}, 1, DEEP_WORK},
+  {{100, 100, 100, 0, 0}, 3, WRITING},
+  {{300, 100, 300, 0, 0}, 3, MEETING},
+  {{80, 80, 80, 80, 80}, 5, BREAK},
+  {{50, 0, 0, 0, 0}, 1, IDLE}
 };
 
 const int NUM_BUTTONS = sizeof(buttons) / sizeof(buttons[0]);
 const int NUM_LED = sizeof(leds) / sizeof(leds[0]);
+const int NUM_BUZZER_PATTERNS = sizeof(buzzerPatterns) / sizeof(buzzerPatterns[0]);
 
 const unsigned long DEBOUNCE_TIME = 10; // debounce time in ms
 
@@ -57,7 +71,7 @@ TaskHandle_t timerTaskHandle = NULL;
 QueueHandle_t xQueue;
 
 void updateState(State buttonState);
-void triggerBuzzer();
+void triggerBuzzer(State newState);
 void updateLights(State newState);
 
 void stateMachineTask(void * parameters) {
@@ -73,7 +87,7 @@ void stateMachineTask(void * parameters) {
 
       if(elapsedDebounceTime > pdMS_TO_TICKS( DEBOUNCE_TIME )) {
         updateState(receivedState);
-        triggerBuzzer();
+        triggerBuzzer(receivedState);
 
         xTaskNotify(timerTaskHandle,(uint32_t) receivedState, eSetValueWithOverwrite);
 
@@ -235,10 +249,25 @@ void updateLights(State newState) {
   }
 }
 
-void triggerBuzzer() {    
-    digitalWrite(buzzer.pin, HIGH);
-    vTaskDelay(pdMS_TO_TICKS(buzzer.buzzerTime)); // Have buzzer play for 200 ms
-    digitalWrite(buzzer.pin, LOW);
+void triggerBuzzer(State newState) {   
+  for(int i = 0; i < NUM_BUZZER_PATTERNS; i++) {
+    if(buzzerPatterns[i].state == newState) {
+      for(int p = 0; p < buzzerPatterns[i].patternLength; p++) {
+        bool isEven = !(p % 2);
+        
+        if(isEven) {
+          digitalWrite(buzzer.pin, HIGH);
+        }
+        else {
+          digitalWrite(buzzer.pin, LOW);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(buzzerPatterns[i].pattern[p])); // Have buzzer play for ms
+      }
+
+      digitalWrite(buzzer.pin, LOW);
+    }
+  }
 }
 
 // put your main code here, to run repeatedly:
