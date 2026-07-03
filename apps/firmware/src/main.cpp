@@ -38,6 +38,12 @@ struct LED leds[] = {
   {23, WRITING, MEETING} // Yellow LED
 };
 
+struct Session {
+  uint32_t timestamp_s;
+  char state[16];
+  uint32_t duration_s;
+};
+
 // GPIO pins connected to button
 Button buttons[] = {
   {18, CODING},
@@ -71,6 +77,7 @@ TaskHandle_t timerTaskHandle = NULL;
 
 // Create the size of the buffer
 QueueHandle_t xQueue;
+QueueHandle_t xSessionQueue;
 
 void updateState(State buttonState);
 void triggerBuzzer(State newState);
@@ -179,6 +186,9 @@ void setup() {
   nvs_flash_init();
 
   xQueue = xQueueCreate( 10, sizeof( State ) );
+  xSessionQueue = xQueueCreate(20, sizeof( Session ));
+
+  load_unsynced_sessions();
 
   // initialize the pushbuttons pin as an pull-up input
   for(int i = 0; i < NUM_BUTTONS; i++) {
@@ -286,22 +296,26 @@ void log_session(State newState, uint32_t timestamp_s, uint32_t duration_s) {
   nvs_handle_t my_handle;
   esp_err_t err = nvs_open("ppp_sessions", NVS_READWRITE, &my_handle);
 
-  if (err == ESP_OK) {
-    char key[32];
-    snprintf(key, sizeof(key), "session_%u", timestamp_s);
-
-    char value[64];
-    snprintf(value, sizeof(value), "%u, %s, %u", timestamp_s, stateToString(newState), duration_s);
-
-    // Write a key-value pair
-    nvs_set_str(my_handle, key, value);
-
-    // Commit changes to flash memory
-    err = nvs_commit(my_handle);
-
-    // Close NVS Handle
-    nvs_close(my_handle);
+  if(err != ESP_OK) {
+    Serial.println("Failed to create handle");
+    return;
   }
+
+  char key[32];
+  snprintf(key, sizeof(key), "session_%u", timestamp_s);
+
+  char value[64];
+  snprintf(value, sizeof(value), "%u, %s, %u", timestamp_s, stateToString(newState), duration_s);
+
+  // Write a key-value pair
+  nvs_set_str(my_handle, key, value);
+
+  // Commit changes to flash memory
+  err = nvs_commit(my_handle);
+
+  // Close NVS Handle
+  nvs_close(my_handle);
+  
 }
 
 const char* stateToString(State state) {
@@ -324,7 +338,49 @@ const char* stateToString(State state) {
 }
 
 void load_unsynced_sessions() {
+  // Get first entry
+  nvs_handle_t my_handle;
+  esp_err_t err = nvs_open("ppp_sessions", NVS_READONLY, &my_handle);
 
+  if(err != ESP_OK) {
+      Serial.println("Failed create handle");
+      return;
+  }
+
+  nvs_iterator_t it = nvs_entry_find("nvs", "ppp_sessions", NVS_TYPE_STR);
+  
+  while(it != NULL) {
+    // Get info about current entry
+    nvs_entry_info_t info;
+    nvs_entry_info(it, &info);
+
+    // Read the value using the key
+    char value[64];
+    size_t value_size = sizeof(value);
+    nvs_get_str(my_handle, info.key, value, &value_size);
+
+    // Parse value into a Session struct
+    Session session;
+    int size = sscanf(value, "%u, %[^,], %u", &session.timestamp_s, session.state, &session.duration_s);
+
+    if(size == 3) {
+      // Push Session onto xSessionQueue
+      xQueueSend(xSessionQueue, &session, pdMS_TO_TICKS( 100 ));
+    }
+    else {
+      // Failed to parse value into session
+      Serial.println("Failed to parse value into xsession");
+    }
+
+    // Advance to next entry
+    it = nvs_entry_next(it);
+  }
+
+  // Close NVS iterator
+  nvs_release_iterator(it);
+
+  // Close NVS Handle
+  nvs_close(my_handle);
 }
 
 // put your main code here, to run repeatedly:

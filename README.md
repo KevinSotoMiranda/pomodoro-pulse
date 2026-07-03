@@ -184,7 +184,7 @@ NVS Flash persistence layer. This is the hardest phase — do not rush it.*
 - [x] Wire state transitions to RGB LED colour changes and distinct buzzer tone patterns per state
 - [x] Initialize NVS: call `nvs_flash_init()` on boot and open a `ppp_sessions` namespace for session records
 - [x] Write a `log_session()` function: on every state transition, persist `{ timestamp_ms, state_id, duration_ms }` to NVS Flash
-- [ ] Write a `load_unsynced_sessions()` function: on boot, read all unsynced NVS entries into a `FreeRTOS Queue` for `CommsSyncTask` to consume
+- [x] Write a `load_unsynced_sessions()` function: on boot, read all unsynced NVS entries into a `FreeRTOS Queue` for `CommsSyncTask` to consume
 - [ ] **Stress test:** simulate 50+ rapid state flips with Wi-Fi disabled; power-cycle the board hard; verify every record is still in NVS
 - [ ] Audit all inter-task communication: confirm zero shared globals without a mutex or semaphore guarding them
 
