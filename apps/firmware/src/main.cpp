@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include "nvs_flash.h"
+#include "nvs.h"
 
 enum State {
   CODING,
@@ -73,12 +75,15 @@ QueueHandle_t xQueue;
 void updateState(State buttonState);
 void triggerBuzzer(State newState);
 void updateLights(State newState);
+void log_session(State newState, uint32_t timestamp_s, uint32_t duration_s);
+void load_unsynced_sessions();
+const char* stateToString(State state);
 
 void stateMachineTask(void * parameters) {
   State receivedState;
   const TickType_t xTicksToWait = pdMS_TO_TICKS( 100 );
 
-  TickType_t lastTimePressed = 0;
+  TickType_t lastTimePressed = xTaskGetTickCount();
 
   for(;;) {
     if(xQueueReceive(xQueue, &receivedState, xTicksToWait) == pdPASS) {
@@ -88,6 +93,10 @@ void stateMachineTask(void * parameters) {
       if(elapsedDebounceTime > pdMS_TO_TICKS( DEBOUNCE_TIME )) {
         updateState(receivedState);
         triggerBuzzer(receivedState);
+
+        uint32_t duration_s = pdTICKS_TO_MS(currentTime - lastTimePressed) / 1000;
+        uint32_t timeStamp_s = pdTICKS_TO_MS(currentTime) / 1000;
+        log_session(receivedState, timeStamp_s, duration_s);
 
         xTaskNotify(timerTaskHandle,(uint32_t) receivedState, eSetValueWithOverwrite);
 
@@ -166,6 +175,9 @@ void IRAM_ATTR buttonPressISR( void ) {
 // put your setup code here, to run once:
 void setup() {
   Serial.begin(115200);
+
+  nvs_flash_init();
+
   xQueue = xQueueCreate( 10, sizeof( State ) );
 
   // initialize the pushbuttons pin as an pull-up input
@@ -268,6 +280,51 @@ void triggerBuzzer(State newState) {
       digitalWrite(buzzer.pin, LOW);
     }
   }
+}
+
+void log_session(State newState, uint32_t timestamp_s, uint32_t duration_s) {
+  nvs_handle_t my_handle;
+  esp_err_t err = nvs_open("ppp_sessions", NVS_READWRITE, &my_handle);
+
+  if (err == ESP_OK) {
+    char key[32];
+    snprintf(key, sizeof(key), "session_%u", timestamp_s);
+
+    char value[64];
+    snprintf(value, sizeof(value), "%u, %s, %u", timestamp_s, stateToString(newState), duration_s);
+
+    // Write a key-value pair
+    nvs_set_str(my_handle, key, value);
+
+    // Commit changes to flash memory
+    err = nvs_commit(my_handle);
+
+    // Close NVS Handle
+    nvs_close(my_handle);
+  }
+}
+
+const char* stateToString(State state) {
+  switch(state) {
+    case CODING:
+      return "CODING";
+    case WRITING:
+      return "WRITING";
+    case BREAK:
+      return "BREAK";
+    case MEETING:
+      return "MEETING";
+    case DEEP_WORK:
+      return "DEEP_WORK";
+    case IDLE:
+      return "IDLE";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+void load_unsynced_sessions() {
+
 }
 
 // put your main code here, to run repeatedly:

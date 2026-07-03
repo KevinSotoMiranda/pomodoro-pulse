@@ -182,8 +182,8 @@ NVS Flash persistence layer. This is the hardest phase — do not rush it.*
 - [x] Implement GPIO input via interrupts: the ISR posts an event to a `xQueueSendFromISR` queue; `StateMachineTask` pops from it — zero polling loops anywhere
 - [x] Implement the Pomodoro countdown timer inside `TimerTask` using `xTaskGetTickCount()` for drift-free, high-resolution timing
 - [x] Wire state transitions to RGB LED colour changes and distinct buzzer tone patterns per state
-- [ ] Initialize NVS: call `nvs_flash_init()` on boot and open a `ppp_sessions` namespace for session records
-- [ ] Write a `log_session()` function: on every state transition, persist `{ timestamp_ms, state_id, duration_ms }` to NVS Flash
+- [x] Initialize NVS: call `nvs_flash_init()` on boot and open a `ppp_sessions` namespace for session records
+- [x] Write a `log_session()` function: on every state transition, persist `{ timestamp_ms, state_id, duration_ms }` to NVS Flash
 - [ ] Write a `load_unsynced_sessions()` function: on boot, read all unsynced NVS entries into a `FreeRTOS Queue` for `CommsSyncTask` to consume
 - [ ] **Stress test:** simulate 50+ rapid state flips with Wi-Fi disabled; power-cycle the board hard; verify every record is still in NVS
 - [ ] Audit all inter-task communication: confirm zero shared globals without a mutex or semaphore guarding them
@@ -324,3 +324,6 @@ Grafana for the heavy time-series charting.*
 ---
 
 *PomodoroPulse — Built from scratch. No Node-RED. No drag-and-drop. No shortcuts.*
+
+### Known Issues
+#triggerBuzzer blocks stateMachineTask for the duration of the buzzer pattern (up to 500ms for DEEP_WORK). This delays the xTaskNotify to timerTask, causing a slight countdown start offset. Fix: move buzzer into a dedicated buzzerTask driven by xTaskNotify.
