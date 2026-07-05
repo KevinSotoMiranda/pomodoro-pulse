@@ -33,7 +33,7 @@ struct BuzzerPattern {
 };
 
 struct LED leds[] = {
-  // {26, BREAK, IDLE}, COMMENTED OUT SINCE USING SAME PIN AS BUZZER // Green LED
+  {26, BREAK, IDLE}, // Green LED
   {25, CODING, DEEP_WORK}, // Red LED
   {23, WRITING, MEETING} // Yellow LED
 };
@@ -55,7 +55,7 @@ Button buttons[] = {
 }; 
 
 Buzzer buzzer = {
-  26,
+  27,
 };
 
 BuzzerPattern buzzerPatterns[] = {
